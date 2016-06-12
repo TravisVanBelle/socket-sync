@@ -3,13 +3,30 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var Player = require('./player');
 var Room = require('./room');
+var Sync = require('./sync');
 
-// Array of rooms
-let rooms = {};
+var sync = null;
 
 io.on('connection', function(socket){
+
+	// If no sync object, create it and register datatypes
+	if (!sync) {
+		sync = new Sync(io);
+
+		sync.addDatatype('player');
+
+	}
+
+	// When a user connects, register events
+	sync.addSocket(socket);
 	
-	socket.on('join', function(msg){
+
+
+
+
+
+
+	/*socket.on('join', function(msg){
 		console.log(msg.uuid + ' has joined ' + msg.roomId);
 
 		// Create player
@@ -56,7 +73,7 @@ io.on('connection', function(socket){
 		rooms[socket.gameData.roomId].setPlayerPosition(socket.gameData.uuid, msg.x, msg.y);
 
 		io.to(socket.id).emit('gameUpdate', rooms[socket.gameData.roomId].getAllPlayerData());
-	});
+	});*/
 
 
 });
