@@ -13,53 +13,20 @@ io.on('connection', function(socket){
 	if (!sync) {
 		sync = new Sync(io);
 
-		sync.addDatatype('player');
+
 
 	}
 
 	// When a user connects, register events
 	sync.addSocket(socket);
 	
+	
 
 
 
 
 
-
-	/*socket.on('join', function(msg){
-		console.log(msg.uuid + ' has joined ' + msg.roomId);
-
-		// Create player
-		let player = new Player();
-
-		player.x = msg.x;
-		player.y = msg.y;
-		player.uuid = msg.uuid;
-		player.roomId = msg.roomId;
-		player.socketId = socket.id;
-
-		// If room doesn't exist, create room
-		if (!rooms[player.roomId]){
-			rooms[player.roomId] = new Room();
-			rooms[player.roomId].roomId = player.roomId;
-		}
-
-		// Send msg of new player to current players
-		io.to(player.roomId).emit('newUser', player);
-
-		// Send msg to new player of current players
-		io.to(player.socketId).emit('allUsers', rooms[player.roomId].getAllPlayerData());
-
-		// Add player to room
-		rooms[player.roomId].newPlayer(player);
-		socket.join(msg.roomId);
-
-		// Store game data in socket object
-		socket.gameData = {
-			roomId: msg.roomId,
-			uuid: msg.uuid,
-		};
-	});
+	/*
 
 	// Remove a player from the room when they disconnect.
 	socket.on('disconnect', function(msg){

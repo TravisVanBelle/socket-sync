@@ -2,26 +2,34 @@ var _ = require('lodash');
 
 module.exports = class Room {
 	constructor() {
-		this.roomId = null
-		this.players = [];
+		this.roomId = null;
+		this.users = [];
 	}
 
-	// Add a new player to the array of players
-	newPlayer(player){
-		this.players.push(player);
+	setRoomId(roomid) {
+		this.roomId = roomid;
 	}
 
-	// Remove a player with the given uuid
-	removePlayer(uuid){
-		_.remove(this.players, function (e) {
-			return e.uuid === uuid;
+	// Add a new user to the array of players
+	newUser(user, socketId){
+		this.users.push(user);
+		this.users[this.users.length-1].socketId = socketId;
+	}
+
+	// Remove a user with the given socketId
+	removeUser(socketId){
+		_.remove(this.users, function (e) {
+			return e.socketId === socketId;
 		});
 	}
 
-	// Return all players
-	getAllPlayerData(){
-		return this.players;
+	// Return all users
+	getAllUserData(){
+		return this.users;
 	}
+
+
+
 
 	setPlayerPosition(uuid, x, y){
 		this.players.forEach((p) => {

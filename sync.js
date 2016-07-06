@@ -1,3 +1,5 @@
+var Room = require('./room');
+
 module.exports = class Sync {
 	constructor(io){
 		this.io = io;
@@ -6,18 +8,23 @@ module.exports = class Sync {
 
 		this.datatypes = [];
 		this.data = {};
-	}
-
-	addDatatype(type){
-		this.data[type] = {};
-		this.datatypes.push(type);
+		this.rooms = {};
 	}
 
 	addSocket(socket){
 		this.users[socket.id] = socket;
 
+		var self = this;
+
 		// Event for when they join the room
-		socket.on('join', this._join);
+		socket.on('join', function (data){
+			self._join(data, socket);
+		});
+
+		// Remove a player from the room when they disconnect.
+		socket.on('disconnect', function (data){
+			self._leave(data, socket);
+		});
 	}
 
 
@@ -25,29 +32,44 @@ module.exports = class Sync {
 	/**
 	 * data: Object
 	 *		roomid: String (The room to join.)
-	 *		id: String (The socket id.)
+	 *		uuid: String (The users uuid.)
 	 *		userData: Object (All necessary data of a new user.)
 	*/
-	_join(data) {
-		// Get socket
-		var socket = this.users[data.id];
-		var dataToSend;
+	_join(data, socket) {
+		console.log('joining');
+		// Get user data
+		let userData = data;
+		let roomId = data.roomId;
+		let socketId = socket.id;
 
-		// Add player to the actual socket room
-		socket.join(data.roomid);
+		// If room doesn't exist, create room
+		if (!this.rooms[roomId]){
+			this.rooms[roomId] = new Room();
+			this.rooms[roomId].setRoomId(roomId);
+		}
 
-		// Add user's data to data object for each datatype
-		this.datatypes.forEach(function (type) {
-			if (data.userData[type]) {
-				this.data[type][data.id] = data.userData[type];
-			}
-		});
+		// Send msg of new user to current users
+		this.io.to(roomId).emit('newUser', userData);
 
-		// Send user all data about current session
-		this.io.to(socket.id).emit('join--all-data', this.data);
+		// Send msg to new user of current users
+		this.io.to(socketId).emit('allUsers', this.rooms[roomId].getAllUserData());
 
-		this.io.to(data.roomid).emit()
+		// Add user to room
+		this.rooms[roomId].newUser(userData, socket.id);
 
+		socket.join(roomId);
+
+		socket.gameData = {
+			roomId: roomId,
+			socketId: socket.id
+		}
+	}
+
+	_leave(data, socket) {
+		// Todo: Notify the room
+
+		// Remove from the array
+		this.rooms[socket.gameData.roomId].removeUser(socket.id);
 	}
 }
 
