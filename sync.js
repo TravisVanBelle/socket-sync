@@ -1,14 +1,12 @@
-var Room = require('./room');
 
 module.exports = class Sync {
 	constructor(io){
 		this.io = io;
 
 		this.users = {};
-
-		this.datatypes = [];
-		this.data = {};
-		this.rooms = {};
+		this.game = {
+			userData: {}
+		};
 	}
 
 	addSocket(socket){
@@ -25,55 +23,40 @@ module.exports = class Sync {
 		socket.on('disconnect', function (data){
 			self._leave(data, socket);
 		});
+
+		// User sends an update to the server
+		socket.on('serverUpdate', function(data){
+			self._serverUpdate(data, socket);
+		});
+
+		// User requests an update from the server
+		socket.on('requestUpdate', function(data){
+			self._clientUpdate(data, socket);
+		});
 	}
 
+	_serverUpdate(data, socket) {
+		this.game.userData[socketId] = data;
+	}
 
+	_clientUpdate(data, socket) {
+		socket.emit('clientUpdate', this.game);
+	}
 
-	/**
-	 * data: Object
-	 *		roomid: String (The room to join.)
-	 *		uuid: String (The users uuid.)
-	 *		userData: Object (All necessary data of a new user.)
-	*/
 	_join(data, socket) {
-		console.log('joining');
-		// Get user data
-		let userData = data;
-		let roomId = data.roomId;
-		let socketId = socket.id;
-
-		// If room doesn't exist, create room
-		if (!this.rooms[roomId]){
-			this.rooms[roomId] = new Room();
-			this.rooms[roomId].setRoomId(roomId);
-		}
-
-		// Send msg of new user to current users
-		this.io.to(roomId).emit('newUser', userData);
-
-		// Send msg to new user of current users
-		this.io.to(socketId).emit('allUsers', this.rooms[roomId].getAllUserData());
-
-		// Add user to room
-		this.rooms[roomId].newUser(userData, socket.id);
+		let roomId = 'default';
 
 		socket.join(roomId);
 
 		socket.gameData = {
-			roomId: roomId,
 			socketId: socket.id
 		}
+
+		this.game.userData[socket.id] = data;
 	}
 
 	_leave(data, socket) {
-		// Todo: Notify the room
-
-		// Remove from the array
-		this.rooms[socket.gameData.roomId].removeUser(socket.id);
+		// Remove from the array of data
+		this.game.userData[socket.id] = {};
 	}
 }
-
-// this.data: Object
-// 	 'player': Array
-//			- socketid
-//			- player data
