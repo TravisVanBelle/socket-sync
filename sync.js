@@ -1,7 +1,10 @@
+var _ = require('lodash');
 
 module.exports = class Sync {
 	constructor(io){
 		this.io = io;
+
+		this.counter = 0;
 
 		this.users = {};
 		this.game = {
@@ -32,15 +35,24 @@ module.exports = class Sync {
 		// User requests an update from the server
 		socket.on('requestUpdate', function(data){
 			self._clientUpdate(data, socket);
+			socket.currentGameData = Object.assign({}, self.game);
+		});
+
+		socket.on('sendInstant', function(data){
+			self._sendInstant(data, socket);
 		});
 	}
 
 	_serverUpdate(data, socket) {
-		this.game.userData[socketId] = data;
+		this.game.userData[socket.id] = data;
 	}
 
 	_clientUpdate(data, socket) {
 		socket.emit('clientUpdate', this.game);
+	}
+
+	_sendInstant(data, socket) {
+		socket.broadcast.to('default').emit('sendInstant', data);
 	}
 
 	_join(data, socket) {
@@ -48,15 +60,15 @@ module.exports = class Sync {
 
 		socket.join(roomId);
 
-		socket.gameData = {
-			socketId: socket.id
-		}
+		socket.currentGameData = {
+			userData: {}
+		};
 
 		this.game.userData[socket.id] = data;
 	}
 
 	_leave(data, socket) {
 		// Remove from the array of data
-		this.game.userData[socket.id] = {};
+		delete this.game.userData[socket.id];
 	}
 }
