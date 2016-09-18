@@ -39,7 +39,7 @@ module.exports = class Sync {
 		});
 
 		// The client requests an update from the server.
-		socket.on('requestUpdate', function(data){
+		socket.on('requestUpdate', function(){
 			self._getUpdate(socket);
 			socket.currentGameData = Object.assign({}, self.game);
 		});
