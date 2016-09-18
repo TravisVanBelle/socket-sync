@@ -14,7 +14,7 @@ io.on('connection', function(socket){
 
 	// When a user connects, register events
 	sync.addSocket(socket);
-
+	
 });
 
 http.listen(3005, function(){

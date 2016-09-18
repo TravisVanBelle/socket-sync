@@ -1,60 +1,60 @@
-var _ = require('lodash');
-
+/**
+ * A simple library for maintaining instance synchronization in a socket.io app.
+ */
 module.exports = class Sync {
+	/**
+	 * Sets up the Sync instance.
+	 * io: The Socket.io object to attach listeners to.
+	 */
 	constructor(io){
 		this.io = io;
-
-		this.counter = 0;
-
 		this.users = {};
 		this.game = {
 			userData: {}
 		};
 	}
 
+  /**
+	 * Adds a user/socket to the instance and sets up listeners.
+	 * socket: The client socket object to add.
+	 */
 	addSocket(socket){
 		this.users[socket.id] = socket;
 
 		var self = this;
 
-		// Event for when they join the room
+		// The client joins the room.
 		socket.on('join', function (data){
 			self._join(data, socket);
 		});
 
-		// Remove a player from the room when they disconnect.
-		socket.on('disconnect', function (data){
-			self._leave(data, socket);
+		// The client leaves the room.
+		socket.on('disconnect', function (){
+			self._leave(socket);
 		});
 
-		// User sends an update to the server
-		socket.on('serverUpdate', function(data){
-			self._serverUpdate(data, socket);
+		// The client sends an uodate to the server.
+		socket.on('sendUpdate', function(data){
+			self._sendUpdate(data, socket);
 		});
 
-		// User requests an update from the server
+		// The client requests an update from the server.
 		socket.on('requestUpdate', function(data){
-			self._clientUpdate(data, socket);
+			self._getUpdate(socket);
 			socket.currentGameData = Object.assign({}, self.game);
 		});
 
+		// The client sends an instant update to the server.
 		socket.on('sendInstant', function(data){
-			self._sendInstant(data, socket);
+			self._getInstant(data, socket);
 		});
 	}
 
-	_serverUpdate(data, socket) {
-		this.game.userData[socket.id] = data;
-	}
-
-	_clientUpdate(data, socket) {
-		socket.emit('clientUpdate', this.game);
-	}
-
-	_sendInstant(data, socket) {
-		socket.broadcast.to('default').emit('sendInstant', data);
-	}
-
+	/**
+	 * Add a client to the instance.
+	 * data: The client's initial data.
+	 * socket: The client's socket object.
+	 */
 	_join(data, socket) {
 		let roomId = 'default';
 
@@ -67,8 +67,37 @@ module.exports = class Sync {
 		this.game.userData[socket.id] = data;
 	}
 
-	_leave(data, socket) {
-		// Remove from the array of data
+	/**
+	 * Remove a client from the instance.
+	 * socket: The client's socket object to remove.
+	 */
+	_leave(socket) {
 		delete this.game.userData[socket.id];
+	}
+
+	/**
+	 * Update the game data that was sent from a cient.
+	 * data: The game data to update.
+	 * socket: The socket that sent the updated data.
+	 */
+	_sendUpdate(data, socket) {
+		this.game.userData[socket.id] = data;
+	}
+
+	/**
+	 * Send an update to a client.
+	 * socket: The client socket to send data to.
+	 */
+	_getUpdate(socket) {
+		socket.emit('getUpdate', this.game);
+	}
+
+	/**
+	 * Send an instant update to all clients.
+	 * data: The data to send to the clients.
+	 * socket: The socket to broadcast to.
+	 */
+	_getInstant(data, socket) {
+		socket.broadcast.to('default').emit('getInstant', data);
 	}
 }
